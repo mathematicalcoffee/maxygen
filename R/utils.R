@@ -48,7 +48,7 @@ parse_manual_link <- function(xml) {
 # Display maths is $$expression$$ which must be on one line, OR a paragraph
 # on its own, provided it begins and ends with '$$'.
 # 
-# Doesn't handle complex things like $f(x) = x \text{ for $x > 0$}$.
+# Doesn't handle complex things like $f(x) = x \u{007F}ext{ for $x > 0$}$.
 # Ideally you will pass this over to MathJaX or some proper parser (that
 #  tokenises and collates properly).
 # Can't be preceded or followed immediately by a letter (just to try stop things
@@ -65,31 +65,26 @@ parse_manual_link <- function(xml) {
 # Since the maths support is not in commonmark and it is possible for maths
 #  expressions to be parsed with markdown (e.g. $a *b* c$ looks like the 'b' is emphasized),
 #  we 'protect' them before passing to commonmark by putting them all in inline code
-#  with $expr$ --> `inlineMath\rexpr` or `displayMath\rexpr` (hoping that this markup will never turn
+#  with $expr$ --> `inlineMath\u{007F}expr` or `displayMath\u{007F}expr` (hoping that this markup will never turn
 #  up in normal usage) and then handle them in the code handler.
 protect_maths <- function (text) {
-    # grab display maths
-    text <- gsub("(?<![\\w$])\\$\\$((?:[^$\\\\]+|\\.|\\$(?!\\$))+)\\$\\$(?![\\w$])",
-                 "`displayMath\r\\1`",
+    # grab display maths. $$ {stuff} $$, can have internal dollar signs if escaped, or single internal dollar signs.
+    text <- gsub("(?<![\\w$\\\\])\\$\\$((?:[^$\\\\]+|\\\\.|\\$(?!\\$))+)\\$\\$(?![\\w$])",
+                 "`displayMath\u{007F}\\1`",
                  perl=T,
                  text)
     # inline maths
-    # grep("(?<!\\$)\\$(?=[^\\s$])(\\\\.|[^$\r\n]+)(?<=\\S)\\$(?!\\$)",
-    #      c('$succeed$', '$ fail$', '$\tfail$', '$fail$$', '$$', '$$fail$','$\\$succeed$'),
-    #      perl=T, value=T)
-    text <- gsub("(?<![\\w$])\\$((?=[^\\s$])(\\\\.|[^\\\\$\r\n]+)+(?<=\\S))\\$(?![\\w$])",
-                 "`inlineMath\r\\1`",
+    text <- gsub("(?<![\\w$])\\$((?=[^\\s$])(?:\\\\.|[^\\\\$\u{007F}\n]+)+(?<=\\S))\\$(?![\\w$])",
+                 "`inlineMath\u{007F}\\1`",
                  perl=T,
                  text)
     return(text)
 }
 
 # here `text` is the insides of an inline code block.
-# if `inlineMath\r expr
+# if `inlineMath\u{007F} expr
 replace_maths <- function (text) {
-    o.text <- text
-    text <- sub('^inlineMath\r(.+)$', '\\eqn{\\1}', text)
-    if (text == o.text)
-        text <- sub('^displayMath\r(.+)$', '\\deqn{\\1}', text)
+    text <- sub('^inlineMath\u{007F}(.+)$', '\\\\eqn{\\1}', text)
+    text <- sub('^displayMath\u{007F}(.+)$', '\\\\deqn{\\1}', text)
     return(text)
 }

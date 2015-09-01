@@ -10,7 +10,7 @@ full_markdown <- function(key, rest) {
 #' @importFrom commonmark markdown_xml
 #' @importFrom xml2 read_xml
 
-markdown <- function(text, tags) { # @TODO: is text split into multiple lines?
+markdown <- function(text, tags) {
   text <- protect_maths(text)
   md <- markdown_xml(text, hardbreaks = TRUE)
   xml <- read_xml(md)
@@ -137,7 +137,13 @@ tags <- list(
       if (link$pkg != "") link$pkg <- paste0("[", link$pkg, "]")
       paste0("\\code{\\link", link$pkg, "{", link$func, "}}")
     } else {
-      list("\\code{", replace_maths(xml_contents(xml)), "}")
+        orig <- as.character(xml_contents(xml))
+        txt <- replace_maths(orig)
+        if (txt == orig) {
+            list("\\code{", txt, "}")
+        } else {
+            list(txt)
+        }
     }
   },
 
